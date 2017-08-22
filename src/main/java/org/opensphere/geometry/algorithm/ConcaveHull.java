@@ -190,6 +190,83 @@ public class ConcaveHull {
 	 * @return
 	 * 		the concave hull
 	 */
+
+	private QuadEdge createEdges(QuadEdge qe,  List<QuadEdge> qeBorder, int i) {
+		// edges creation
+
+			LineSegment s = qe.toLineSegment();
+			s.normalize();
+
+			Integer idS = this.coordinates.get(s.p0);
+			Integer idD = this.coordinates.get(s.p1);
+			Vertex oV = this.vertices.get(idS);
+			Vertex eV = this.vertices.get(idD);
+
+			Edge edge;
+			if (qeBorder.contains(qe)) {
+				oV.setBorder(true);
+				eV.setBorder(true);
+				edge = new Edge(i, s, oV, eV, true);
+				if (s.getLength() < this.threshold) {
+					this.shortLengths.put(i, edge);
+				} else {
+					this.lengths.put(i, edge);
+				}
+			} else {
+				edge = new Edge(i, s, oV, eV, false);
+			}
+			this.edges.put(i, edge);
+			this.segments.put(s, i);
+
+
+
+     return qe;
+	}
+
+	private List<QuadEdge> createBorders(List<QuadEdge> qeFrameBorder, List<QuadEdge> qeFrame, List<QuadEdge> qeBorder ){
+
+		for (int j = 0 ; j < qeFrameBorder.size() ; j++) {
+			QuadEdge q = qeFrameBorder.get(j);
+			if (! qeFrame.contains(q)) {
+				qeBorder.add(q);
+			}
+		}
+
+		return qeBorder;
+
+	}
+
+	private List<QuadEdgeTriangle>  generateTriangle(List<QuadEdgeTriangle> qeTriangles ){
+		int i = 0;
+		for (QuadEdgeTriangle qet : qeTriangles) {
+		LineSegment sA = qet.getEdge(0).toLineSegment();
+		LineSegment sB = qet.getEdge(1).toLineSegment();
+		LineSegment sC = qet.getEdge(2).toLineSegment();
+		sA.normalize();
+		sB.normalize();
+		sC.normalize();
+
+		Edge edgeA = this.edges.get(this.segments.get(sA));
+		Edge edgeB = this.edges.get(this.segments.get(sB));
+		Edge edgeC = this.edges.get(this.segments.get(sC));
+		if (edgeA == null || edgeB == null || edgeC == null)
+			continue;
+
+		Triangle triangle = new Triangle(i, qet.isBorder()?true:false);
+		triangle.addEdge(edgeA);
+		triangle.addEdge(edgeB);
+		triangle.addEdge(edgeC);
+
+		edgeA.addTriangle(triangle);
+		edgeB.addTriangle(triangle);
+		edgeC.addTriangle(triangle);
+
+		this.triangles.put(i, triangle);
+		i++;
+		}
+		return qeTriangles;
+	}
+
 	private Geometry concaveHull() {
 		
 		// triangulation: create a DelaunayTriangulationBuilder object	
@@ -226,14 +303,9 @@ public class ConcaveHull {
 			}
 		}
 
-		// border
-		for (int j = 0 ; j < qeFrameBorder.size() ; j++) {
-			QuadEdge q = qeFrameBorder.get(j);
-			if (! qeFrame.contains(q)) {
-				qeBorder.add(q);
-			}
-		}
-		
+
+		qeBorder = createBorders(qeFrameBorder, qeFrame, qeBorder);
+
 		// deletion of exterior edges
 		for (QuadEdge qe : qeFrame) {
 			qes.delete(qe);
@@ -248,65 +320,13 @@ public class ConcaveHull {
 		TreeMap<QuadEdge, Double> qeSorted = new TreeMap<QuadEdge, Double>(dc);
 		qeSorted.putAll(qeDistances);
 
-		// edges creation
 		int i = 0;
 		for (QuadEdge qe : qeSorted.keySet()) {
-			LineSegment s = qe.toLineSegment();
-			s.normalize();
-			
-			Integer idS = this.coordinates.get(s.p0);
-			Integer idD = this.coordinates.get(s.p1);
-			Vertex oV = this.vertices.get(idS);
-			Vertex eV = this.vertices.get(idD);
-			
-			Edge edge;
-			if (qeBorder.contains(qe)) {
-				oV.setBorder(true);
-				eV.setBorder(true);
-				edge = new Edge(i, s, oV, eV, true);
-				if (s.getLength() < this.threshold) {
-					this.shortLengths.put(i, edge);
-				} else {
-					this.lengths.put(i, edge);
-				}
-			} else {
-				edge = new Edge(i, s, oV, eV, false);
-			}
-			this.edges.put(i, edge);
-			this.segments.put(s, i);
-			i++;
+			qe = createEdges(qe, qeBorder, i);
+         i++;
 		}
+		qeTriangles = generateTriangle(qeTriangles);
 
-		// hm of linesegment and hm of edges // with id as key
-		// hm of triangles using hm of ls and connection with hm of edges
-		
-		i = 0;
-		for (QuadEdgeTriangle qet : qeTriangles) {
-			LineSegment sA = qet.getEdge(0).toLineSegment();
-			LineSegment sB = qet.getEdge(1).toLineSegment();
-			LineSegment sC = qet.getEdge(2).toLineSegment();
-			sA.normalize();
-			sB.normalize();
-			sC.normalize();
-			
-			Edge edgeA = this.edges.get(this.segments.get(sA));
-			Edge edgeB = this.edges.get(this.segments.get(sB));
-			Edge edgeC = this.edges.get(this.segments.get(sC));
-			if (edgeA == null || edgeB == null || edgeC == null) 
-			    continue;
-
-			Triangle triangle = new Triangle(i, qet.isBorder()?true:false);
-			triangle.addEdge(edgeA);
-			triangle.addEdge(edgeB);
-			triangle.addEdge(edgeC);
-
-			edgeA.addTriangle(triangle);
-			edgeB.addTriangle(triangle);
-			edgeC.addTriangle(triangle);
-
-			this.triangles.put(i, triangle);
-			i++;
-		}
 
 		// add triangle neighbourood
 		for (Edge edge : this.edges.values()) {

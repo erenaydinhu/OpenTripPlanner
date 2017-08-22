@@ -10458,6 +10458,8 @@ public final class GtfsRealtime {
         getUnknownFields() {
       return this.unknownFields;
     }
+
+
     private Alert(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)

@@ -273,24 +273,12 @@ public abstract class Tile {
         BufferedImage image = getEmptyImage(renderRequest.style);
         byte[] imagePixelData = ((DataBufferByte)image.getRaster().getDataBuffer()).getData();
         int i = 0;
-        for (Sample s : getSamples()) {
-            byte pixel;
-            if (s != null) {
-                if (renderRequest.style == Style.BOARDINGS) {
-                    pixel = 0; // FIXME s.evalBoardings(surf);
-                } else {
-                    long t = s.eval(surf); // renderRequest.style
-                    if (t == Long.MAX_VALUE)
-                        pixel = UNREACHABLE;
-                    else {
-                        t /= 60;
-                        if (t < -120)
-                            t = -120;
-                        else if (t > 120)
-                            t = 120;
-                        pixel = (byte) t;
-                    }
-                }
+        for (Sample sample : getSamples()) {
+            long travelTime = sample.eval(surf);
+            byte pixel = 0;
+            if (sample != null) {
+                pixel = setPixel(pixel, travelTime, renderRequest);
+
             } else {
                 pixel = UNREACHABLE;
             }
@@ -300,6 +288,34 @@ public abstract class Tile {
         long t1 = System.currentTimeMillis();
         LOG.debug("filled in tile image from SPT in {}msec", t1 - t0);
         return image;
+    }
+
+    public byte setPixel(byte pixel, long travelTime, RenderRequest renderRequest){
+
+        if (renderRequest.style == Style.BOARDINGS) {
+            pixel = 0; // FIXME s.evalBoardings(surf);
+        } else {
+           // renderRequest.style
+            if (travelTime == Long.MAX_VALUE)
+                pixel = UNREACHABLE;
+            else {
+                pixel = calculateTraveltimeToByte (travelTime );
+            }
+        }
+
+        return pixel;
+
+    };
+
+    public byte calculateTraveltimeToByte(long travelTime){
+
+        travelTime /= 60;
+        if (travelTime < -120)
+            travelTime = -120;
+        else if (travelTime > 120)
+            travelTime = 120;
+
+        return (byte) travelTime;
     }
 
     public BufferedImage linearCombination(
