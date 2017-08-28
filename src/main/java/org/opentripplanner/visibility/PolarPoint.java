@@ -68,15 +68,10 @@ class PolarPoint extends VLPoint implements Comparable<VLPoint> {
         return clone;
     }
 
-    public void set_x(double x_temp) {
-        PolarPoint newPoint = new PolarPoint(polar_origin, new VLPoint(x_temp, y));
+    public void setPolarCoordinates(double y_temp, double x_temp){
+        PolarPoint newPoint = new PolarPoint(polar_origin, new VLPoint(x_temp, y_temp));
         setFromPolarPoint(newPoint);
-    }
-
-    public void set_y(double y_temp) {
-        PolarPoint newPoint = new PolarPoint(polar_origin, new VLPoint(x, y_temp));
-        setFromPolarPoint(newPoint);
-    }
+    };
 
     public void set_range(double range_temp) {
         range = range_temp;

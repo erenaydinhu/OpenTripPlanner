@@ -21,21 +21,44 @@ import org.onebusaway.gtfs.model.Trip;
 
 public class BikeAccessTest {
 
+
+    Trip trip = new Trip();
+    Route route = new Route();
+
     @Test
     public void testBikesAllowed() {
-        Trip trip = new Trip();
-        Route route = new Route();
         trip.setRoute(route);
 
+        TestOneBikeAllowed();
+        trip.setBikesAllowed(2);
+        assertEquals(BikeAccess.NOT_ALLOWED, BikeAccess.fromTrip(trip));
+        TestOneBikeNotAllowed(trip, route);
+    }
+    @Test
+    private void TestOneBikeAllowed() {
         assertEquals(BikeAccess.UNKNOWN, BikeAccess.fromTrip(trip));
         trip.setBikesAllowed(1);
         assertEquals(BikeAccess.ALLOWED, BikeAccess.fromTrip(trip));
-        trip.setBikesAllowed(2);
-        assertEquals(BikeAccess.NOT_ALLOWED, BikeAccess.fromTrip(trip));
+    }
+    @Test
+    private void TestOneBikeNotAllowed(Trip trip, Route route) {
+        trip.setRoute(route);
         route.setBikesAllowed(1);
         assertEquals(BikeAccess.NOT_ALLOWED, BikeAccess.fromTrip(trip));
+        TestZeroBikesAllowd(trip, route);
+    }
+
+    @Test
+    private void TestZeroBikesAllowd(Trip trip, Route route) {
+        trip.setRoute(route);
         trip.setBikesAllowed(0);
         assertEquals(BikeAccess.ALLOWED, BikeAccess.fromTrip(trip));
+        TestTwoBikesNotAllowed(trip, route);
+    }
+    @Test
+    private void TestTwoBikesNotAllowed(Trip trip, Route route) {
+
+        trip.setRoute(route);
         route.setBikesAllowed(2);
         assertEquals(BikeAccess.NOT_ALLOWED, BikeAccess.fromTrip(trip));
     }
